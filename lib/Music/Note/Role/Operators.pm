@@ -1,9 +1,11 @@
 package Music::Note::Role::Operators;
 
-# ABSTRACT: Adds operator overloading and clone to Music::Note
+# ABSTRACT: Adds operator overloading, clone and interval calculation to Music::Note
 
 use Storable ();
 use Role::Tiny;
+use Music::Intervals;
+
 requires 'format';
 
 use overload
@@ -12,6 +14,7 @@ use overload
     '==' => 'eq',
     '>=' => 'gte',
     '<=' => 'lte',
+    '-' => 'subtract',
     fallback => 1,
     ;
 
@@ -22,7 +25,8 @@ Music::Note::Role::Operators
 =head2 DESCRIPTION
 
 L<Role::Tiny> to be applied on top L<Music::Note> with comparison methods
-added and overloaded operators.  Also adds a clone method.
+added and overloaded operators.  Also adds a clone method and a way to
+generate Music::Interval objects via a Music::Note.
 
 =head2 SYNOPSIS
 
@@ -61,6 +65,9 @@ Assuming you're working in a script:
 
     $true = $note->lte($note->clone);
     $true = $note <= $note->clone;
+
+    my $interval = $note->interval($other);
+    my $conveneince_interval = $note->interval(%args_for_music_interval);
 
 =head2 CAVEAT
 
@@ -106,6 +113,61 @@ sub lte {
     my ($self, $other) = @_;
     $self->_maybe_bail_on_comparison($other);
     return $self->format('midinum') <= $other->format('midinum');
+}
+
+sub subtract {
+    my ($self, $other) = @_;
+    $self->_maybe_bail_on_comparison($other);
+    return $self->format('midinum') - $other->format('midinum');
+}
+
+=head2 get_interval
+
+If called with a single Music::Note as argument is returns a
+Music::Interval object
+
+    my $interval = $self->get_interval($other);
+
+If called with an arguments hash
+
+    my $interval = $self->get_interval(%args_for_music_interval)
+
+Note that this will default to 1 for the following constructor attributes,
+so if you don't want these values you'll have to explicitly set them to
+something else in the constructor.
+
+Music::Intervals does some quite expensive calculations during the
+C<process> method.  By default this method will run C<process> before
+returning the interval.  You can avoid this by adding the argument
+C<<no_process => 1>> to this method's arguments.
+
+NOTE: It would be nice to have the subtract method return a Music::Interval
+but it's a complex module, and only seems to deal with intervals inside a single octave.
+
+=cut
+
+sub get_interval {
+    my $self = shift;
+    my ($other, %args);
+    if (ref $_[0] && $_[0]->isa('Music::Note') ) {
+        ($other, %args) = @_;
+    }
+    else {
+        %args = @_;
+    }
+
+    $self->_maybe_bail_on_comparison($other) unless $other || $args{notes};
+    $args{notes} ||= [ $self->format('isobase'), $other->format('isobase') ];
+    $args{$_} ||= 1 for qw/chords equalt freqs interval cents prime integer/;
+    $args{size} ||= scalar @{$args{notes}};
+    my $no_process;
+    if ($args{no_process}) {
+        $no_process = 1;
+        delete $args{no_process};
+    }
+    my $interval = Music::Intervals->new(%args);
+    $interval->process unless $no_process;
+    return $interval;
 }
 
 sub clone {
