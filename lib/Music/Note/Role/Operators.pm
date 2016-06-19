@@ -2,14 +2,16 @@ package Music::Note::Role::Operators;
 
 # ABSTRACT: Adds operator overloading and clone to Music::Note
 
+use Storable ();
 use Role::Tiny;
-use Storable qw/dclone/;
+requires 'format';
+
 use overload
-    '>'  => \&gt,
-    '<'  => \&lt,
-    '==' => \&eq,
-    '>=' => \&gte,
-    '<=' => \&lte,
+    '>'  => 'gt',
+    '<'  => 'lt',
+    '==' => 'eq',
+    '>=' => 'gte',
+    '<=' => 'lte',
     fallback => 1,
     ;
 
@@ -35,7 +37,7 @@ If you're working with a L<Music::Note> subclass:
 Or if you're working in a script and just want the behaviour:
 
     use Music::Note;
-    use Role::Tiny;
+    use Role::Tiny (); # Don't import R::T into current namespace for cleanliness
     Role::Tiny->apply_roles_to_package('Music::Note', 'Music::Note::Role::Operators');
 
 =head2 SUMMARY
@@ -60,6 +62,12 @@ Assuming you're working in a script:
     $true = $note->lte($note->clone);
     $true = $note <= $note->clone;
 
+=head2 CAVEAT
+
+Don't try to do something like C<$note == 90>>.  The overloading expects a
+L<Music::Note on both sides.  TO comparisons versus note and not a note you
+should be doing C<< $note->format('midi') == 90 >>.
+
 =head3 AUTHOR
 
 Kieren Diment L<zarquon@cpan.org>
@@ -72,31 +80,41 @@ This code can be redistributed on the same terms as perl itself
 
 sub gt {
     my ($self, $other) = @_;
+    $self->_maybe_bail_on_comparison($other);
     return $self->format('midinum') > $other->format('midinum');
 }
 
 sub lt {
     my ($self, $other) = @_;
+    $self->_maybe_bail_on_comparison($other);
     return $self->format('midinum') < $other->format('midinum');
 }
 
 sub eq {
     my ($self, $other) = @_;
+    $self->_maybe_bail_on_comparison($other);
     return $self->format('midinum') == $other->format('midinum');
 }
 
 sub gte {
     my ($self, $other) = @_;
+    $self->_maybe_bail_on_comparison($other);
     return $self->format('midinum') >= $other->format('midinum');
 }
 
 sub lte {
     my ($self, $other) = @_;
+    $self->_maybe_bail_on_comparison($other);
     return $self->format('midinum') <= $other->format('midinum');
 }
 
 sub clone {
-    return $_[0]->dclone;
+    return Storable::dclone($_[0]);
+}
+
+sub _maybe_bail_on_comparison {
+    my ($self, $other) = @_;
+    die "$other is not a Music::Note" unless $other->isa('Music::Note');
 }
 
 1;

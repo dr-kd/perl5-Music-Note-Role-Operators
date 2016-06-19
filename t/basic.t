@@ -2,9 +2,9 @@
 use warnings;
 use strict;
 use Test::More;
-use Role::Tiny;
+use Role::Tiny ();
+use Test::Exception;
 use Music::Note;
-use Role::Tiny;
 Role::Tiny->apply_roles_to_package('Music::Note', 'Music::Note::Role::Operators');
 
 my $note = Music::Note->new('C');
@@ -28,5 +28,7 @@ ok $note->gte($same), "note greater than or equal to its clone";
 
 ok $note->eq($same), "note is same val as its clone";
 ok $note == $same, "note is same value as its clone overloaded";
+
+dies_ok { $note < 10 } "Overloading should only be done where both entities are a Music::Note";
 
 done_testing;
