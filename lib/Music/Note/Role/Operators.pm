@@ -19,8 +19,8 @@ Music::Note::Role::Operators
 
 =head2 DESCRIPTION
 
-Subclass of L<Music::Note> with comparison methods added and overloaded
-operators.  Also adds a clone method.
+L<Role::Tiny> to be applied on top L<Music::Note> with comparison methods
+added and overloaded operators.  Also adds a clone method.
 
 =head2 SYNOPSIS
 
