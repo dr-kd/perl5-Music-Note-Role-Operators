@@ -65,8 +65,8 @@ Assuming you're working in a script:
 =head2 CAVEAT
 
 Don't try to do something like C<$note == 90>>.  The overloading expects a
-L<Music::Note on both sides.  TO comparisons versus note and not a note you
-should be doing C<< $note->format('midi') == 90 >>.
+L<Music::Note> on both sides.  To perform comparisons versus note and not a
+note you should be doing C<< $note->format('midi') == 90 >>.
 
 =head3 AUTHOR
 
